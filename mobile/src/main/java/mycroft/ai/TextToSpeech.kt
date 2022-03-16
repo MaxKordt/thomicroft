@@ -1,15 +1,20 @@
 package mycroft.ai
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
+import android.util.Log
 import com.android.volley.DefaultRetryPolicy
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
+import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import mycroft.ai.shared.utilities.GuiUtilities.showToast
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.*
 
@@ -32,6 +37,32 @@ class TextToSpeech {
         url = "http://$serverIp:$port"
         filePath = context.filesDir
     }
+/*
+    fun sendTTSRequest(input_text : String) {
+        /*
+        MaryTTS:
+        var mUrl = "$url/process?INPUT_TEXT=$input_text&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=de&VOICE=bits3-hsmm"
+        Larynx with Eva-Voice
+        var mUrl = "$url/api/tts?text=$input_text&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
+        Larynx with Karlsson-Voice
+         */
+        //var mUrl = "$url/api/tts?text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_small&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        var mUrl = "$url/api/tts?text=Es ist im Moment Überwiegend bewölkt bei dreizehn Grad celsius.&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_small&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        var hashMap: HashMap<String, String> = HashMap()
+        var request = InputStreamVolleyRequest(
+            context, Request.Method.GET, mUrl,
+            Response.Listener<ByteArray>() { response ->
+                writeWavFile(response)
+            },
+            Response.ErrorListener { error ->
+                showToast(context, error.toString())
+                playErrorMessage()
+            },
+            hashMap)
+        request.retryPolicy = DefaultRetryPolicy(20000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT)
+        queue.add(request)
+    }
+    */
 
     fun sendTTSRequest(input_text : String) {
         /*
@@ -41,7 +72,9 @@ class TextToSpeech {
         var mUrl = "$url/api/tts?text=$input_text&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
         Larynx with Karlsson-Voice
          */
-        var mUrl = "$url/api/tts?text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        var mUrl = "$url/api/tts?option=raw-stream&text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        //var mUrl = "$url/api/tts?text=$input_text"//&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
+        //var mUrl = "$url/api/tts?text=$input_text&voice=en-us/blizzard_fls-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
         var hashMap: HashMap<String, String> = HashMap()
         var request = InputStreamVolleyRequest(
             context, Request.Method.GET, mUrl,
@@ -55,6 +88,54 @@ class TextToSpeech {
             hashMap)
         request.retryPolicy = DefaultRetryPolicy(20000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT)
         queue.add(request)
+
+        var rand = Random().nextInt(5)
+        playFiller(rand, input_text)
+    }
+
+    /*fun sendTTSRequest(input_text : String) {
+
+        val tts = android.speech.tts.TextToSpeech(context, android.speech.tts.TextToSpeech.OnInitListener{
+
+            @Override
+            fun onInit(status : Int) {
+
+
+            }
+        })
+        Log.i("Test", "Hallo")
+        tts.setLanguage(Locale.GERMANY);
+        tts.speak(input_text, android.speech.tts.TextToSpeech.QUEUE_FLUSH, null)
+    }*/
+
+    private fun playFromByte(data : ByteArray) {
+
+        val tempMp3 = File.createTempFile("temp", "mp3", filePath)
+        tempMp3.deleteOnExit()
+        val fos = FileOutputStream(tempMp3)
+        fos.write(data)
+        fos.close()
+
+        mediaPlayer.reset() //avoid running out of resources
+
+        val fis = FileInputStream(tempMp3);
+        mediaPlayer.setDataSource(fis.fd)
+        mediaPlayer.prepare()
+        mediaPlayer.start()
+        /*mediaPlayer.setOnPreparedListener(MediaPlayer.OnPreparedListener {
+
+            @Override
+            fun onPrepared(player : MediaPlayer) {
+
+                player.start()
+            }
+        })*/
+
+
+        /*mediaPlayer.setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_MEDIA).build())
+        mediaPlayer.setDataSource(mUrl)
+        mediaPlayer.prepareAsync()
+        mediaPlayer.start()*/
     }
 
     private fun writeWavFile(data : ByteArray) {
@@ -85,6 +166,38 @@ class TextToSpeech {
     fun playErrorMessage() {
         mediaPlayer.reset()
         val filename = "android.resource://" + context.packageName + "/raw/error_no_connection"
+        mediaPlayer.setDataSource(context, Uri.parse(filename))
+        mediaPlayer.prepare()
+        mediaPlayer.start()
+    }
+
+    private fun playFiller(fillerNumber : Int, text : String) {
+
+        mediaPlayer.reset()
+        var filename = "android.resource://" + context.packageName + "/raw/inordnung"
+        if (fillerNumber == 0) {
+
+            filename = "android.resource://" + context.packageName + "/raw/inordnung"
+        }
+        if (fillerNumber == 1) {
+
+            filename = "android.resource://" + context.packageName + "/raw/einenmoment"
+        }
+        if (fillerNumber == 2) {
+
+            filename = "android.resource://" + context.packageName + "/raw/ok"
+        }
+        if (fillerNumber == 3) {
+
+            filename = "android.resource://" + context.packageName + "/raw/verstanden"
+        }
+        if (fillerNumber == 4) {
+
+            filename = "android.resource://" + context.packageName + "/raw/wetter"
+        }
+
+        if (text.length > 200) filename = "android.resource://" + context.packageName + "/raw/einenmoment"
+
         mediaPlayer.setDataSource(context, Uri.parse(filename))
         mediaPlayer.prepare()
         mediaPlayer.start()
