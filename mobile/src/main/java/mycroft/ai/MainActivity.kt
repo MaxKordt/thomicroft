@@ -260,7 +260,7 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
 
         return true
     }
-
+    
     fun sendUtterance() {
         val utterance = utteranceInput.text.toString()
         if (utterance != "") {
