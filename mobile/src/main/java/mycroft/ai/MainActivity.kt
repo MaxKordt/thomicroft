@@ -279,12 +279,20 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
     }
 
     private var doRepeat : Boolean = false
+    private var ttsSysnthesisLevel : Int = 1
     private var lastUtterance : String = ""
     private val possIntentsRepeatSkill = listOf<String>("Wiederholen", "Noch einmal", "Nochmal", "Wiederhole das", "Wiederhole das bitte", "Wiederhole")
+    private val possIntentsDeutlicherSkill = listOf<String>("Deutlicher", "Deutlicher bitte", "Klarer", "Nochmal deutlicher", "Wiederholen deutlicher",
+            "Deutlicher wiederholen", "Nochmal klarer", "Wiederhole klarer", "Klarer wiederholen", "Klarer bitte", "Verständlicher", "Verständlicher bitte",
+            "Nochmal verständlicher", "Wiederhole verständlicher", "Verständlicher wiederholen")
     private fun checkForSpecialSkills(utterance : String) {
 
         if (possIntentsRepeatSkill.contains(utterance)) doRepeat = true
         //check for more
+        if (possIntentsDeutlicherSkill.contains(utterance)) {
+
+            ttsSysnthesisLevel += 1
+        }
 
         if (doRepeat) {
 

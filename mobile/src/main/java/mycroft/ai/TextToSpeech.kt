@@ -73,6 +73,10 @@ class TextToSpeech {
     }
     */
 
+    private val small : String = "vctk_small"
+    private val medium : String = "vctk_medium"
+    private val high : String = "universal_large"
+
     fun sendTTSRequest(input_text : String) {
         /*
         MaryTTS:
