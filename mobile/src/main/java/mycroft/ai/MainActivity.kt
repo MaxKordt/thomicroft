@@ -326,7 +326,9 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
         }
 
     }
+
     private var phoneNumber = "0"
+
     private fun phoneCall(number : String){
         if(ContextCompat.checkSelfPermission(this,
                 Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
@@ -347,7 +349,7 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CALL){
-            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 phoneCall(phoneNumber)
             } else {
                 Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show()
@@ -392,19 +394,16 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
         mycroftAdapter.notifyItemInserted(utterances.size - 1)
         if (voxswitch.isChecked) {
             if (mycroftUtterance.from.toString() != "USER") {
-                tts.sendTTSRequest(mycroftUtterance.utterance)
+                //split each utterance into its sentences(faster for long output)
+                var newUtterances = mycroftUtterance.utterance.split(".")
+                if(newUtterances[newUtterances.size - 1].isEmpty()) newUtterances = newUtterances.dropLast(1)
+                newUtterances.forEach{ it+"." }
+                newUtterances.forEach { tts.sendTTSRequest(it)}
+
             }
         }
         cardList.smoothScrollToPosition(mycroftAdapter.itemCount - 1)
     }
-
-    /*
-    private fun checkForExtraSkills(utterance: Utterance){
-        if(utterance.utterance.equals("112 anrufen")){
-            notrufRufen()
-        }
-    }
-    */
 
     private fun registerReceivers() {
         registerNetworkReceiver()
