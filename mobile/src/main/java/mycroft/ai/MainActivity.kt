@@ -153,18 +153,6 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
             }
         }
 
-        // Textinput
-        utteranceInput.setOnEditorActionListener(TextView.OnEditorActionListener { _, actionId, _ ->
-            if(actionId == EditorInfo.IME_ACTION_DONE){
-                sendUtterance()
-                true
-            } else {
-                false
-            }
-        })
-        micButton.setOnClickListener { recognizeMicrophone() }
-        sendUtterance.setOnClickListener { sendUtterance() }
-
         registerForContextMenu(cardList)
 
         //attach a listener to check for changes in state
@@ -210,6 +198,18 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
 
             requestQueue = Volley.newRequestQueue(this)
         }
+
+        // Textinput
+        utteranceInput.setOnEditorActionListener(TextView.OnEditorActionListener { _, actionId, _ ->
+            if(actionId == EditorInfo.IME_ACTION_DONE){
+                sendUtterance()
+                true
+            } else {
+                false
+            }
+        })
+        micButton.setOnClickListener { recognizeMicrophone() }
+        sendUtterance.setOnClickListener { sendUtterance() }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -267,9 +267,41 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
     fun sendUtterance() {
         val utterance = utteranceInput.text.toString()
         if (utterance != "") {
+            if (!possIntentsRepeatSkill.contains(utterance)) lastUtterance = utterance
             sendMessage(utterance)
+            checkForSpecialSkills(utterance)
             utteranceInput.text.clear()
         }
+    }
+
+    fun sendUtterance(input : String) {
+        if (input != "") {
+            sendMessage(input)
+            utteranceInput.text.clear()
+        }
+    }
+
+    private var doRepeat : Boolean = false
+    private var ttsSysnthesisLevel : Int = 1
+    private var lastUtterance : String = ""
+    private val possIntentsRepeatSkill = listOf<String>("Wiederholen", "Noch einmal", "Nochmal", "Wiederhole das", "Wiederhole das bitte", "Wiederhole")
+    private val possIntentsDeutlicherSkill = listOf<String>("Deutlicher", "Deutlicher bitte", "Klarer", "Nochmal deutlicher", "Wiederholen deutlicher",
+            "Deutlicher wiederholen", "Nochmal klarer", "Wiederhole klarer", "Klarer wiederholen", "Klarer bitte", "Verständlicher", "Verständlicher bitte",
+            "Nochmal verständlicher", "Wiederhole verständlicher", "Verständlicher wiederholen")
+    private fun checkForSpecialSkills(utterance : String) {
+
+        if (possIntentsRepeatSkill.contains(utterance)) doRepeat = true
+        //check for more
+        if (possIntentsDeutlicherSkill.contains(utterance)) {
+
+            ttsSysnthesisLevel += 1
+        }
+
+        if (doRepeat) {
+
+            sendUtterance(lastUtterance)
+        }
+        //if (something else...)
     }
 
     fun connectWebSocket() {
@@ -436,11 +468,10 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
                 }
             }, 1000)
 
+
         } catch (exception: WebsocketNotConnectedException) {
             showToast(this, resources.getString(R.string.websocket_closed))
-            tts.playErrorMessage()
         }
-
     }
 
     fun recognizeMicrophone() {

@@ -1,11 +1,13 @@
 package mycroft.ai
 
+import android.app.Activity
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
+import android.os.Message
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.android.volley.DefaultRetryPolicy
@@ -35,7 +37,6 @@ class TextToSpeech {
     private var minTimeTillFiller : Double = 5000000000.0
     private var lastFiller = System.nanoTime()
     private var currentFiller = System.nanoTime()
-    public var lastUtterance : String = ""
 
     constructor(context : Context, serverIp : String, port : String = "59125") {
         this.serverIp = serverIp
@@ -72,6 +73,10 @@ class TextToSpeech {
     }
     */
 
+    private val small : String = "vctk_small"
+    private val medium : String = "vctk_medium"
+    private val high : String = "universal_large"
+
     fun sendTTSRequest(input_text : String) {
         /*
         MaryTTS:
@@ -81,36 +86,29 @@ class TextToSpeech {
         Larynx with Karlsson-Voice
          */
 
-        if (input_text.equals("Ich wiederhole")) {
+        var mUrl = "$url/api/tts?option=raw-stream&text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_small&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        //var mUrl = "$url/api/tts?text=$input_text"//&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
+        //var mUrl = "$url/api/tts?text=$input_text&voice=en-us/blizzard_fls-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        var hashMap: HashMap<String, String> = HashMap()
+        var request = InputStreamVolleyRequest(
+                context, Request.Method.GET, mUrl,
+                Response.Listener<ByteArray>() { response ->
+                    writeWavFile(response)
+                },
+                Response.ErrorListener { error ->
+                    showToast(context, error.toString())
+                    playErrorMessage()
+                },
+                hashMap)
+        request.retryPolicy = DefaultRetryPolicy(20000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT)
+        queue.add(request)
 
+        var rand = Random().nextInt(4)
+        if (input_text.length > 50) {
 
-        }
-        else {
-
-            var mUrl = "$url/api/tts?option=raw-stream&text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_small&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
-            //var mUrl = "$url/api/tts?text=$input_text"//&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
-            //var mUrl = "$url/api/tts?text=$input_text&voice=en-us/blizzard_fls-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
-            var hashMap: HashMap<String, String> = HashMap()
-            var request = InputStreamVolleyRequest(
-                    context, Request.Method.GET, mUrl,
-                    Response.Listener<ByteArray>() { response ->
-                        writeWavFile(response)
-                    },
-                    Response.ErrorListener { error ->
-                        showToast(context, error.toString())
-                        playErrorMessage()
-                    },
-                    hashMap)
-            request.retryPolicy = DefaultRetryPolicy(20000, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT)
-            queue.add(request)
-
-            var rand = Random().nextInt(4)
-            if (input_text.length > 50) {
-
-                currentFiller = System.nanoTime()
-                if (currentFiller - lastFiller > minTimeTillFiller) playFiller(rand, input_text)
-                lastFiller = currentFiller
-            }
+            currentFiller = System.nanoTime()
+            if (currentFiller - lastFiller > minTimeTillFiller) playFiller(rand, input_text)
+            lastFiller = currentFiller
         }
     }
 
