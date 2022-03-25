@@ -210,6 +210,13 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
         })
         micButton.setOnClickListener { recognizeMicrophone() }
         sendUtterance.setOnClickListener { sendUtterance() }
+
+        //Permission for phone calls
+        if(ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -288,6 +295,10 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
     private val possIntentsDeutlicherSkill = listOf<String>("Deutlicher", "Deutlicher bitte", "Klarer", "Nochmal deutlicher", "Wiederholen deutlicher",
             "Deutlicher wiederholen", "Nochmal klarer", "Wiederhole klarer", "Klarer wiederholen", "Klarer bitte", "Verständlicher", "Verständlicher bitte",
             "Nochmal verständlicher", "Wiederhole verständlicher", "Verständlicher wiederholen")
+    private val possIntentsNotrufSkill = listOf<String>("Rufe Notruf", "Rufe Notarzt", "Rufe Krankenwagen", "Rufe 112", "Rufe Notruf an", "Rufe Notarzt an",
+            "Rufe 112 an", "Rufe den Notarzt", "Rufe den Notruf", "Rufe einen Krankenwagen", "Rufe die 112", "Rufe den Notarzt an", "Rufe den Notruf an",
+            "Rufe die 112 an", "Notruf rufen", "Notarzt rufen", "Krankenwagen rufen", "112 rufen", "112 anrufen", "Notarzt anrufen", "Notruf anrufen", "Notruf")
+    private val possIntentsCallSkill = "Rufe (die )?[0-9 ]{6,17}( an)?|[0-9 ]{6,17} anrufen".toRegex()
     private fun checkForSpecialSkills(utterance : String) {
 
         if (possIntentsRepeatSkill.contains(utterance)) doRepeat = true
@@ -302,6 +313,46 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
             sendUtterance(lastUtterance)
         }
         //if (something else...)
+
+        if(possIntentsNotrufSkill.contains(utterance)){
+            //would be 112, but for testing my number
+            phoneNumber = "00491737569950"
+            //would be 112, but for testing Max's number
+            //phoneNumber number = "0176 60023394"
+            phoneCall(phoneNumber)
+        }else if(possIntentsCallSkill.containsMatchIn(utterance)){
+            phoneNumber = possIntentsCallSkill.find(utterance)!!.value.filter{ it.isDigit() }
+            phoneCall(phoneNumber)
+        }
+
+    }
+    private var phoneNumber = "0"
+    private fun phoneCall(number : String){
+        if(ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL)
+        } else if(number != "0" && number != "110" && number != "112") {
+
+            val dial = "tel:$number"
+            startActivity(Intent(Intent.ACTION_CALL, Uri.parse(dial)))
+        }
+
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CALL){
+            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                phoneCall(phoneNumber)
+            } else {
+                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     fun connectWebSocket() {
@@ -341,48 +392,19 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
         mycroftAdapter.notifyItemInserted(utterances.size - 1)
         if (voxswitch.isChecked) {
             if (mycroftUtterance.from.toString() != "USER") {
-                checkForExtraSkills(mycroftUtterance)
                 tts.sendTTSRequest(mycroftUtterance.utterance)
             }
         }
         cardList.smoothScrollToPosition(mycroftAdapter.itemCount - 1)
     }
 
+    /*
     private fun checkForExtraSkills(utterance: Utterance){
         if(utterance.utterance.equals("112 anrufen")){
             notrufRufen()
         }
     }
-
-    private fun notrufRufen(){
-        if(ContextCompat.checkSelfPermission(this,
-            Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
-                ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL)
-        } else {
-            //eigentlich 112, aber testweise meine nummer
-            //val number = "00491737569950"
-            //eigentlich 112, aber testweise Max nummer
-            val number = "0176 60023394"
-            val dial = "tel:$number"
-            startActivity(Intent(Intent.ACTION_CALL, Uri.parse(dial)))
-        }
-
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == REQUEST_CALL){
-            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                notrufRufen()
-            } else {
-                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+    */
 
     private fun registerReceivers() {
         registerNetworkReceiver()
