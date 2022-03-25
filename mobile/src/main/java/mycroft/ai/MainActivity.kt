@@ -37,6 +37,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
@@ -112,6 +113,8 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
 
     private lateinit var requestQueue : RequestQueue
 
+    //ID for requesting a Phonecall to 112
+    private val REQUEST_CALL = 112
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -306,10 +309,47 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
         mycroftAdapter.notifyItemInserted(utterances.size - 1)
         if (voxswitch.isChecked) {
             if (mycroftUtterance.from.toString() != "USER") {
+                checkForExtraSkills(mycroftUtterance)
                 tts.sendTTSRequest(mycroftUtterance.utterance)
             }
         }
         cardList.smoothScrollToPosition(mycroftAdapter.itemCount - 1)
+    }
+
+    private fun checkForExtraSkills(utterance: Utterance){
+        if(utterance.utterance.equals("112 anrufen")){
+            notrufRufen()
+        }
+    }
+
+    private fun notrufRufen(){
+        if(ContextCompat.checkSelfPermission(this,
+            Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL)
+        } else {
+            //eigentlich 112, aber testweise meine nummer
+            //val number = "00491737569950"
+            //eigentlich 112, aber testweise Max nummer
+            val number = "0176 60023394"
+            val dial = "tel:$number"
+            startActivity(Intent(Intent.ACTION_CALL, Uri.parse(dial)))
+        }
+
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == REQUEST_CALL){
+            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                notrufRufen()
+            } else {
+                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun registerReceivers() {
