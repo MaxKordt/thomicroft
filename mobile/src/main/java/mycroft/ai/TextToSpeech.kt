@@ -76,21 +76,27 @@ class TextToSpeech {
     private val small : String = "vctk_small"
     private val medium : String = "vctk_medium"
     private val high : String = "universal_large"
+    public var canSend : Boolean = true
 
     fun sendTTSRequest(input_text : String) {
+
+        canSend = false
+        //MaryTTS:
+        //var mUrl = "$url/process?INPUT_TEXT=$input_text&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=de&VOICE=bits3-hsmm"
+        //var mUrl = "$url/process?INPUT_TEXT=Laut+der+Vorhersage+liegt+die+Höchsttemperatur+bei+achtzehn+und+die+Tiefsttemperatur+bei+sechs+Grad.&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=de&VOICE=bits3-hsmm"
+        var mUrl = "http://192.168.0.200:59125/process?INPUT_TEXT=$input_text&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=de&VOICE=bits3-hsmm"
         /*
-        MaryTTS:
-        var mUrl = "$url/process?INPUT_TEXT=$input_text&INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&AUDIO=WAVE_FILE&LOCALE=de&VOICE=bits3-hsmm"
         Larynx with Eva-Voice
         var mUrl = "$url/api/tts?text=$input_text&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
         Larynx with Karlsson-Voice
          */
 
-        var mUrl = "$url/api/tts?option=raw-stream&text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_small&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
+        //var mUrl = "$url/api/tts?option=raw-stream&text=$input_text&voice=de-de/karlsson-glow_tts&vocoder=hifi_gan/vctk_small&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
         //var mUrl = "$url/api/tts?text=$input_text"//&voice=de-de/eva_k-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.005&noiseScale=0.333&lengthScale=1"
         //var mUrl = "$url/api/tts?text=$input_text&voice=en-us/blizzard_fls-glow_tts&vocoder=hifi_gan/vctk_medium&denoiserStrength=0.01&noiseScale=0.333&lengthScale=1"
         var hashMap: HashMap<String, String> = HashMap()
         var request = InputStreamVolleyRequest(
+
                 context, Request.Method.GET, mUrl,
                 Response.Listener<ByteArray>() { response ->
                     writeWavFile(response)
@@ -104,12 +110,12 @@ class TextToSpeech {
         queue.add(request)
 
         var rand = Random().nextInt(4)
-        if (input_text.length > 50) {
+        /*if (input_text.length > 50) {
 
             currentFiller = System.nanoTime()
             if (currentFiller - lastFiller > minTimeTillFiller) playFiller(rand, input_text)
             lastFiller = currentFiller
-        }
+        }*/
     }
 
     /*fun sendTTSRequest(input_text : String) {
@@ -165,6 +171,7 @@ class TextToSpeech {
             it.write(data)
         }
         files.add(file)
+        canSend = true
         play()
     }
 
