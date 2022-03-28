@@ -217,6 +217,11 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL)
         }
+        //TODO remove this
+        //Test for sentence splitting
+        val testData ="Vor einem großen Walde wohnte ein armer Holzhacker mit seiner Frau und seinen zwei Kindern; das Bübchen hieß Hänsel und das Mädchen Gretel. Er hatte wenig zu beißen und zu brechen, und einmal, als große Teuerung ins Land kam, konnte er das tägliche Brot nicht mehr schaffen. Wie er sich nun abends im Bette Gedanken machte und sich vor Sorgen herumwälzte, seufzte er und sprach zu seiner Frau: Was soll aus uns werden? Wie können wir unsere armen Kinder ernähren da wir für uns selbst nichts mehr haben? - Weißt du was, Mann, antwortete die Frau, wir wollen morgen in aller Frühe die Kinder hinaus in den Wald führen, wo er am dicksten ist. Da machen wir ihnen ein Feuer an und geben jedem noch ein Stückchen Brot, dann gehen wir an unsere Arbeit und lassen sie allein. Sie finden den Weg nicht wieder nach Haus, und wir sind sie los. - Nein, Frau, sagte der Mann, das tue ich nicht; wie sollt ich's übers Herz bringen, meine Kinder im Walde allein zu lassen! Die wilden Tiere würden bald kommen und sie zerreißen. Oh, du Narr, sagte sie, dann müssen wir alle viere Hungers sterben, du kannst nur die Bretter für die Särge hobeln, und ließ ihm keine Ruhe, bis er einwilligte. Aber die armen Kinder dauern mich doch, sagte der Mann."
+        addData(Utterance( testData, UtteranceFrom.MYCROFT))
+        //tts.sendTTSRequest()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -299,6 +304,7 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
             "Rufe 112 an", "Rufe den Notarzt", "Rufe den Notruf", "Rufe einen Krankenwagen", "Rufe die 112", "Rufe den Notarzt an", "Rufe den Notruf an",
             "Rufe die 112 an", "Notruf rufen", "Notarzt rufen", "Krankenwagen rufen", "112 rufen", "112 anrufen", "Notarzt anrufen", "Notruf anrufen", "Notruf")
     private val possIntentsCallSkill = "Rufe (die )?[0-9 ]{6,17}( an)?|[0-9 ]{6,17} anrufen".toRegex()
+    
     private fun checkForSpecialSkills(utterance : String) {
 
         if (possIntentsRepeatSkill.contains(utterance)) doRepeat = true
@@ -395,11 +401,16 @@ class MainActivity : AppCompatActivity(), RecognitionListener {
         if (voxswitch.isChecked) {
             if (mycroftUtterance.from.toString() != "USER") {
                 //split each utterance into its sentences(faster for long output)
-                var newUtterances = mycroftUtterance.utterance.split(".")
-                if(newUtterances[newUtterances.size - 1].isEmpty()) newUtterances = newUtterances.dropLast(1)
-                newUtterances.forEach{ it+"." }
-                newUtterances.forEach { tts.sendTTSRequest(it)}
-
+                /*
+                var lastSentenceEnd = 0
+                for( i in 1 until mycroftUtterance.utterance.length){
+                    if(mycroftUtterance.utterance[i] == '.' || mycroftUtterance.utterance[i] == '?' || mycroftUtterance.utterance[i] == '!'){
+                        tts.sendTTSRequest(mycroftUtterance.utterance.subSequence(lastSentenceEnd, i+1) as String)
+                        lastSentenceEnd = i+1
+                    }
+                    if(lastSentenceEnd < mycroftUtterance.utterance.length) tts.sendTTSRequest(mycroftUtterance.utterance.substring(lastSentenceEnd))
+                } */
+                tts.sendTTSRequest(mycroftUtterance.utterance)
             }
         }
         cardList.smoothScrollToPosition(mycroftAdapter.itemCount - 1)
